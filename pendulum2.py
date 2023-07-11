@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 from threading import Thread
+from pygame import mixer
 
 # Constants
 VIDEO_WIDTH = 640
@@ -16,8 +17,6 @@ videoCapture.set(cv.CAP_PROP_FRAME_WIDTH, VIDEO_WIDTH)
 videoCapture.set(cv.CAP_PROP_FRAME_HEIGHT, VIDEO_HEIGHT)
 prevCircle = None
 
-import pygame
-from pygame import mixer
 
 mixer.init(channels=64)
 sound = mixer.Sound('Piano_C3.wav')
@@ -27,6 +26,7 @@ def play_sound():
     global channel_number
     mixer.Channel(channel_number).play(sound)
     channel_number = (channel_number + 1) % mixer.get_num_channels()
+    
 while True:
     ret, frame = videoCapture.read()
     if not ret:
