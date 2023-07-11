@@ -1,19 +1,32 @@
 import cv2 as cv
 import numpy as np
 from threading import Thread
-from playsound import playsound
 
 # Constants
-RIGHT_CENTER_X_THRESHOLD = 775  # Adjust this value based on your video frame width
-LEFT_CENTER_X_ThRESHOLD = 725
-DIST_THRESHOLD = 100  # Threshold for distance comparison
+VIDEO_WIDTH = 640
+VIDEO_HEIGHT = 480
+RIGHT_CENTER_X_THRESHOLD = (VIDEO_WIDTH / 2) + 50  # Adjust this value based on your video frame width
+LEFT_CENTER_X_ThRESHOLD = (VIDEO_WIDTH / 2) - 50
+DIST_THRESHOLD = 60  # Threshold for distance comparison
+
 
 videoCapture = cv.VideoCapture(0)
+# Reduce the resolution
+videoCapture.set(cv.CAP_PROP_FRAME_WIDTH, VIDEO_WIDTH)
+videoCapture.set(cv.CAP_PROP_FRAME_HEIGHT, VIDEO_HEIGHT)
 prevCircle = None
 
-def play_sound():
-    playsound('key17.mp3')
+import pygame
+from pygame import mixer
 
+mixer.init(channels=64)
+sound = mixer.Sound('Piano_C3.wav')
+channel_number = 0
+
+def play_sound():
+    global channel_number
+    mixer.Channel(channel_number).play(sound)
+    channel_number = (channel_number + 1) % mixer.get_num_channels()
 while True:
     ret, frame = videoCapture.read()
     if not ret:
