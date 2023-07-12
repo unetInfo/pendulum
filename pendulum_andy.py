@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 from threading import Thread
 from pygame import mixer
+import pygame
 
 # Constants
 VIDEO_WIDTH = 640
@@ -12,8 +13,45 @@ RIGHT_CENTER_X_THRESHOLD = (VIDEO_WIDTH / 2) + 50  # Adjust this value based on 
 LEFT_CENTER_X_ThRESHOLD = (VIDEO_WIDTH / 2) - 50
 DIST_THRESHOLD = 40  # Threshold for distance comparison
 FILTER_LENGTH = 3  # Length of moving average filter
-hough_param1 = 52
-hough_param2 = 23
+
+
+class MutableInt:
+    def __init__(self, value=0):
+        self.value = value
+
+hough_param1 = MutableInt(52)
+hough_param2 = MutableInt(23)
+
+
+# Initialize Pygame
+pygame.init()
+
+# Create a Pygame window
+win = pygame.display.set_mode((90, 222))
+# Define button properties
+button_width = 80
+button_height = 40
+
+# Define buttons
+buttons = [
+    pygame.Rect(5, 5, button_width, button_height),    # Increase Param1 Button
+    pygame.Rect(5, 55, button_width, button_height),   # Decrease Param1 Button
+    pygame.Rect(5, 105, button_width, button_height),    # Increase Param2 Button
+    pygame.Rect(5, 155, button_width, button_height),   # Decrease Param2 Button
+]
+
+actions = [
+    lambda: setattr(hough_param1, "value", hough_param1.value + 1),  # Increase hough_param1
+    lambda: setattr(hough_param1, "value", hough_param1.value - 1),  # Decrease hough_param1
+    lambda: setattr(hough_param2, "value", hough_param2.value + 1),  # Increase hough_param2
+    lambda: setattr(hough_param2, "value", hough_param2.value - 1),  # Decrease hough_param2
+]
+
+for i, button in enumerate(buttons):
+    pygame.draw.rect(win, (33, 111, 111), button)  # draw button
+
+pygame.display.flip()
+
 
 videoCapture = cv.VideoCapture(0)
 # Reduce the resolution
@@ -47,7 +85,7 @@ while True:
     grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     blurFrame = cv.GaussianBlur(grayFrame, (17, 17), 0)
 
-    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=hough_param1, param2=hough_param2, minRadius=MIN_BALL_RADIUS, maxRadius=MAX_BALL_RADIUS)
+    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=hough_param1.value, param2=hough_param2.value, minRadius=MIN_BALL_RADIUS, maxRadius=MAX_BALL_RADIUS)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
@@ -93,6 +131,18 @@ while True:
     cv.imshow("circles", frame)
 
     key = cv.waitKey(1)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = event.pos  # gets mouse position
+            # check if any buttons have been clicked
+            for button in buttons:
+                if button.collidepoint(mouse_pos):
+                    index = buttons.index(button)
+                    actions[index]()
+                    print(hough_param1.value, hough_param2.value)
 
 videoCapture.release()
 cv.destroyAllWindows()
