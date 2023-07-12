@@ -35,7 +35,7 @@ while True:
     grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     blurFrame = cv.GaussianBlur(grayFrame, (17, 17), 0)
 
-    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=50, param2=30, minRadius=75, maxRadius=400)
+    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=50, param2=30, minRadius=15, maxRadius=55)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
@@ -57,9 +57,7 @@ while True:
 
         # Check if the object crosses the center x-axis
         if center_x < RIGHT_CENTER_X_THRESHOLD and center_x > LEFT_CENTER_X_ThRESHOLD:
-            # Play the sound asynchronously
-            sound_thread = Thread(target=play_sound)
-            sound_thread.start()
+            play_sound()
 
     cv.imshow("circles", frame)
 

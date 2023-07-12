@@ -1,7 +1,34 @@
 import cv2 as cv
 import numpy as np
-import pygame
+from threading import Thread
 from pygame import mixer
+
+# Constants
+VIDEO_WIDTH = 640
+VIDEO_HEIGHT = 480
+MIN_BALL_RADIUS = 6
+MAX_BALL_RADIUS = 42
+RIGHT_CENTER_X_THRESHOLD = (VIDEO_WIDTH / 2) + 50  # Adjust this value based on your video frame width
+LEFT_CENTER_X_ThRESHOLD = (VIDEO_WIDTH / 2) - 50
+DIST_THRESHOLD = 40  # Threshold for distance comparison
+FILTER_LENGTH = 3  # Length of moving average filter
+hough_param1 = 52
+hough_param2 = 23
+
+videoCapture = cv.VideoCapture(0)
+# Reduce the resolution
+videoCapture.set(cv.CAP_PROP_FRAME_WIDTH, VIDEO_WIDTH)
+videoCapture.set(cv.CAP_PROP_FRAME_HEIGHT, VIDEO_HEIGHT)
+
+prev_x = None
+prev_avg_dx = None
+avg_dx = 1
+dx_values = []
+dx_values_since_change = []
+prev_sign = None
+
+
+
 
 mixer.init(channels=64)
 sound = mixer.Sound('Piano_C3.wav')
@@ -11,70 +38,61 @@ def play_sound():
     global channel_number
     mixer.Channel(channel_number).play(sound)
     channel_number = (channel_number + 1) % mixer.get_num_channels()
-
-# Constants
-DIST_THRESHOLD = 100  # Threshold for distance comparison
-RADIUS_THRESHOLD = 50  # Threshold for radius comparison
-NUM_CIRCLES = 2  # Number of circles we're interested in
-
-videoCapture = cv.VideoCapture(0)
-
-# Reduce the resolution
-videoCapture.set(cv.CAP_PROP_FRAME_WIDTH, 640)
-videoCapture.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
-
-prev_circles = [None] * NUM_CIRCLES
-prev_dxs = [None] * NUM_CIRCLES
-
-
-def find_best_matches(prev_circles, new_circles, num_circles):
-    """Find the best matches in new_circles for each circle in prev_circles."""
-    if all(circle is None for circle in prev_circles):  # If there were no previous circles, just use the new ones
-        return new_circles[:num_circles]
     
-    matches = []
-    for new_circle in new_circles:
-        best_match = min(prev_circles, key=lambda c: abs(c[2] - new_circle[2]) if c is not None else float('inf'))
-        matches.append((abs(best_match[2] - new_circle[2]), new_circle, best_match))
-    matches.sort(key=lambda x: x[0])  # The best matches are now at the front of the list
-
-    # Only keep as many matches as we want circles
-    return [match[1] for match in matches[:num_circles]]
-
 while True:
     ret, frame = videoCapture.read()
     if not ret:
         break
 
     grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    blurFrame = cv.GaussianBlur(grayFrame, (11, 11), 0)
+    blurFrame = cv.GaussianBlur(grayFrame, (17, 17), 0)
 
-    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=50, param2=30, minRadius=30, maxRadius=200)
+    circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=hough_param1, param2=hough_param2, minRadius=MIN_BALL_RADIUS, maxRadius=MAX_BALL_RADIUS)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
-        chosen_circles = find_best_matches(prev_circles, circles[0], NUM_CIRCLES)
-        for i, chosen in enumerate(chosen_circles):
-            center_x = chosen[0]
-            radius = chosen[2]
+        chosen = None
+        for i in circles[0, :]:
+            if chosen is None:
+                chosen = i
+            else:
+                dist = np.linalg.norm(chosen[:2] - i[:2])
+                if dist <= DIST_THRESHOLD:
+                    chosen = i
 
-            if prev_circles[i] is not None:
-                dx = center_x - prev_circles[i][0]
-                if prev_dxs[i] is not None:
-                    if np.sign(dx) != np.sign(prev_dxs[i]):
-                        play_sound()
-                prev_dxs[i] = dx
+        center_x = chosen[0]
+        radius = chosen[2]
 
-            # Draw circle and center point on the frame
-            cv.circle(frame, (chosen[0], chosen[1]), radius, (0, 100, 100), 3)
-            cv.circle(frame, (chosen[0], chosen[1]), 1, (0, 100, 100), 3)
+        if prev_x is not None:
+            dx = int(center_x) - int(prev_x)
+            dx_values.append(dx)
+            dx_values_since_change.append(dx)
+            if len(dx_values) > FILTER_LENGTH:  # If the length exceeds the filter length, remove the oldest value
+                dx_values.pop(0)
+            avg_dx = np.mean(dx_values)  # Calculate average dx
 
-            prev_circles[i] = chosen
+            # Check if the circle changes direction
+            current_sign = np.sign(avg_dx)
+            if prev_sign is not None and current_sign != prev_sign:
+                peak_speed = max([abs(dx) for dx in dx_values_since_change])
+                dx_values_since_change = []  # Reset the dx_values_since_change
+                play_sound()
+
+            prev_sign = current_sign
+
+        prev_x = center_x
+
+
+        # Draw circle and center point on the frame
+        cv.circle(frame, (chosen[0], chosen[1]), radius, (0, 100, 100), 3)
+        cv.circle(frame, (chosen[0], chosen[1]), 1, (0, 100, 100), 3)
+
+        cv.putText(frame, 'dx: {:.2f}'.format(avg_dx), (10, VIDEO_HEIGHT - 20), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, cv.LINE_AA)
+
 
     cv.imshow("circles", frame)
 
-    if cv.waitKey(1) & 0xFF == ord('q'):
-        break
+    key = cv.waitKey(1)
 
 videoCapture.release()
 cv.destroyAllWindows()
