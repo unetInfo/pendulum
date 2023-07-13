@@ -3,6 +3,27 @@ import numpy as np
 from threading import Thread
 from pygame import mixer
 import pygame
+import rtmidi
+
+midiout = rtmidi.MidiOut()
+available_ports = midiout.get_ports()
+print(available_ports)
+# Attempt to connect to the IAC bus
+if available_ports:
+    for i, port in enumerate(available_ports):
+        if 'IAC Driver Bus 1' in port:  # replace 'IAC Driver Bus 1' with your IAC bus name
+            midiout.open_port(i)
+            print('Connected to port:', port)
+            break
+    else:
+        print('IAC bus not found. Opening a virtual port instead.')
+        midiout.open_virtual_port('My virtual output')
+else:
+    print('No available MIDI ports. Opening a virtual port.')
+    midiout.open_virtual_port('My virtual output')
+
+
+
 
 # Constants
 VIDEO_WIDTH = 640
@@ -20,7 +41,7 @@ class MutableInt:
         self.value = value
 
 hough_param1 = MutableInt(52)
-hough_param2 = MutableInt(23)
+hough_param2 = MutableInt(27)
 
 
 # Initialize Pygame
@@ -76,6 +97,11 @@ def play_sound():
     global channel_number
     mixer.Channel(channel_number).play(sound)
     channel_number = (channel_number + 1) % mixer.get_num_channels()
+    note_on = [0x90, 60, 112]  # channel 1, middle C, velocity 112
+    note_off = [0x80, 60, 0]
+    midiout.send_message(note_off)
+    midiout.send_message(note_on)
+
     
 while True:
     ret, frame = videoCapture.read()
@@ -83,7 +109,7 @@ while True:
         break
 
     grayFrame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    blurFrame = cv.GaussianBlur(grayFrame, (17, 17), 0)
+    blurFrame = cv.GaussianBlur(grayFrame, (11, 11), 0)
 
     circles = cv.HoughCircles(blurFrame, cv.HOUGH_GRADIENT, 1.2, minDist=100, param1=hough_param1.value, param2=hough_param2.value, minRadius=MIN_BALL_RADIUS, maxRadius=MAX_BALL_RADIUS)
 
