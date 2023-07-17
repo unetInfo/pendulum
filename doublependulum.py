@@ -15,17 +15,21 @@ DIST_THRESHOLD = 100  # Threshold for distance comparison
 
 def play_sound():
     playsound('Piano_C3.mp3')
-    
+
+
 def orange():
-        # Construct a mask for orange color, perform dilations and erosions to remove blobs
-        mask = cv.inRange(hsv, orangeLower, orangeUpper)
+    generalSpherefinder(orangeLower, orangeUpper)
+
+
+def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd):
+        mask = cv.inRange(hsv, lwr_iro_bnd, upr_iro_bnd)
         mask = cv.erode(mask, None, iterations=2)
         mask = cv.dilate(mask, None, iterations=2)
 
         # Find contours in the mask and initialize the current (x, y) center of the ball
         cnts = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
-        orangeCenter = None
+        center = None
 
         # Proceed when a contour is found
         if len(cnts) > 0:
@@ -33,22 +37,11 @@ def orange():
             ((x, y), radius) = cv.minEnclosingCircle(c)  # Compute the minimum enclosing circle
             M = cv.moments(c)
             if M["m00"] != 0:
-                orangeCenter = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
+                center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
 
                 if radius > 10:
                     cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
-                    cv.circle(frame, orangeCenter, 5, (0, 0, 255), -1)
-        
-        # pts.appendleft(orangeCenter)        
-            
-        # for i in range(1, len(pts)):
-        #     if pts[i - 1] is None or pts[i] is None:
-        #         continue
-
-        #     thickness = int(np.sqrt(args["buffer"] / float(i + 1)) * 2.5)
-        #     cv.line(frame, pts[i - 1], pts[i], (0, 0, 255), thickness) 
-        
-        # return orangeCenter
+                    cv.circle(frame, center, 5, (0, 0, 255), -1)
 
 def purple():
         mask = cv.inRange(hsv, purpleLower, purpleUpper)
