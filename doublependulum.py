@@ -8,6 +8,11 @@ import time
 from threading import Thread
 from playsound import playsound
 
+from pythonosc.udp_client import SimpleUDPClient
+
+ip = "10.100.1.128"
+port = 54345
+
 # Constants
 RIGHT_CENTER_X_THRESHOLD = 280  # Adjust this value based on your video frame width
 LEFT_CENTER_X_THRESHOLD = 320
@@ -15,7 +20,6 @@ DIST_THRESHOLD = 100  # Threshold for distance comparison
 
 def play_sound():
     playsound('Piano_C3.mp3')
-
 
 def orange():
     generalSpherefinder(orangeLower, orangeUpper ,'orange')
@@ -41,6 +45,7 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name):
 
         # Proceed when a contour is found
         if len(cnts) > 0:
+            ind = 0
             c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
             ((x, y), radius) = cv.minEnclosingCircle(c)  # Compute the minimum enclosing circle
             M = cv.moments(c)
@@ -50,6 +55,8 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name):
                 if radius > 10:
                     cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                     cv.circle(frame, center, 5, (0, 0, 255), -1)
+                    client.send_message("/pendulum", [color_name, ind, center[0], center[1]])  # Send message with int, float and string 
+                    ind = ind + 1
   
 # Construct argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -78,6 +85,8 @@ if not args.get("video", False):
 else:
     vs = cv.VideoCapture(args["video"])
 
+client = SimpleUDPClient(ip, port)  # Create client
+
 while True:
     frame = vs.read()  # Grab current frame
     frame = frame[1] if args.get("video", False) else frame  # Handle frame from VideoCapture or VideoStream
@@ -95,7 +104,9 @@ while True:
     purple()
     red()
     blue()
-                
+             
+    # client.send_message("/pendulum", [1, 2., "hello"])  # Send message with int, float and string   
+    
     # if orange() is not None:
     #     frame_width = frame.shape[1]
     #     middle_x = frame_width // 2
