@@ -18,10 +18,18 @@ def play_sound():
 
 
 def orange():
-    generalSpherefinder(orangeLower, orangeUpper)
+    generalSpherefinder(orangeLower, orangeUpper ,'orange')
+    
+def purple():
+    generalSpherefinder(orangeLower,orangeUpper, 'purple')
+    
+def red():
+    generalSpherefinder(redLower, redUpper, 'red')
+    
+def blue():
+    generalSpherefinder(blueLower, blueUpper ,'blue')
 
-
-def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd):
+def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name):
         mask = cv.inRange(hsv, lwr_iro_bnd, upr_iro_bnd)
         mask = cv.erode(mask, None, iterations=2)
         mask = cv.dilate(mask, None, iterations=2)
@@ -42,83 +50,6 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd):
                 if radius > 10:
                     cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                     cv.circle(frame, center, 5, (0, 0, 255), -1)
-
-def purple():
-        mask = cv.inRange(hsv, purpleLower, purpleUpper)
-        mask = cv.erode(mask, None, iterations=2)
-        mask = cv.dilate(mask, None, iterations=2)
-
-        # Find contours in the mask and initialize the current (x, y) center of the ball
-        cnts = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        purpleCenter = None
-
-        # Proceed when a contour is found
-        if len(cnts) > 0:
-            c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
-            ((x, y), radius) = cv.minEnclosingCircle(c)  # Compute the minimum enclosing circle
-            M = cv.moments(c)
-            if M["m00"] != 0:
-                purpleCenter = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
-
-                if radius > 10:
-                    cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
-                    cv.circle(frame, purpleCenter, 5, (0, 0, 255), -1)
-                    
-        # pts.appendleft(purpleCenter)        
-            
-        # for i in range(1, len(pts)):
-        #     if pts[i - 1] is None or pts[i] is None:
-        #         continue
-
-        #     thickness = int(np.sqrt(args["buffer"] / float(i + 1)) * 2.5)
-        #     cv.line(frame, pts[i - 1], pts[i], (0, 0, 255), thickness)            
-        
-        # return purpleCenter
-        
-def red():
-        mask = cv.inRange(hsv, redLower, redUpper)
-        mask = cv.erode(mask, None, iterations=2)
-        mask = cv.dilate(mask, None, iterations=2)
-
-        # Find contours in the mask and initialize the current (x, y) center of the ball
-        cnts = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        redCenter = None
-
-        # Proceed when a contour is found
-        if len(cnts) > 0:
-            c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
-            ((x, y), radius) = cv.minEnclosingCircle(c)  # Compute the minimum enclosing circle
-            M = cv.moments(c)
-            if M["m00"] != 0:
-                redCenter = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
-
-                if radius > 10:
-                    cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
-                    cv.circle(frame, redCenter, 5, (0, 0, 255), -1)
-                    
-def blue():
-        mask = cv.inRange(hsv, blueLower, blueUpper)
-        mask = cv.erode(mask, None, iterations=2)
-        mask = cv.dilate(mask, None, iterations=2)
-
-        # Find contours in the mask and initialize the current (x, y) center of the ball
-        cnts = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        blueCenter = None
-
-        # Proceed when a contour is found
-        if len(cnts) > 0:
-            c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
-            ((x, y), radius) = cv.minEnclosingCircle(c)  # Compute the minimum enclosing circle
-            M = cv.moments(c)
-            if M["m00"] != 0:
-                blueCenter = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
-
-                if radius > 10:
-                    cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
-                    cv.circle(frame, blueCenter, 5, (0, 0, 255), -1)
   
 # Construct argument parse and parse the arguments
 ap = argparse.ArgumentParser()
