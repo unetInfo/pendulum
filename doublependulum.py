@@ -39,7 +39,7 @@ def orange():
     generalSpherefinder(orangeLower, orangeUpper ,'orange')
     
 def purple():
-    generalSpherefinder(orangeLower,orangeUpper, 'purple')
+    generalSpherefinder(purpleLower, purpleUpper, 'purple')
     
 def red():
     generalSpherefinder(redLower, redUpper, 'red')
