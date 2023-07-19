@@ -10,7 +10,21 @@ from playsound import playsound
 
 from pythonosc.udp_client import SimpleUDPClient
 
-ip = "10.100.1.128"
+# Construct argument parse and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-v", "--video", help="path to the (optional) video file")
+ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
+ap.add_argument("-i", "--ip", required=True, help="IP address of the machine running Golden")
+args = vars(ap.parse_args())
+
+
+# TamperLab Mac Laptop
+# python doublependulum.py --ip 10.100.1.128
+
+# Andy's Mac Studio 
+# python3 doublependulum.py --ip 192.168.1.107
+
+
 port = 54345
 
 # Constants
@@ -25,7 +39,7 @@ def orange():
     generalSpherefinder(orangeLower, orangeUpper ,'orange')
     
 def purple():
-    generalSpherefinder(orangeLower,orangeUpper, 'purple')
+    generalSpherefinder(purpleLower, purpleUpper, 'purple')
     
 def red():
     generalSpherefinder(redLower, redUpper, 'red')
@@ -58,11 +72,7 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name):
                     client.send_message("/pendulum", [color_name, ind, center[0], center[1]])  # Send message with int, float and string 
                     ind = ind + 1
   
-# Construct argument parse and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-v", "--video", help="path to the (optional) video file")
-ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
-args = vars(ap.parse_args())
+
 
 # Lower and upper boundaries of the "orange" color in HSV color space
 orangeLower = (10, 100, 100)
@@ -85,7 +95,7 @@ if not args.get("video", False):
 else:
     vs = cv.VideoCapture(args["video"])
 
-client = SimpleUDPClient(ip, port)  # Create client
+client = SimpleUDPClient(args["ip"], port)  # Create client
 
 while True:
     frame = vs.read()  # Grab current frame
