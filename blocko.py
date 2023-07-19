@@ -87,8 +87,8 @@ orangeUpper = (30, 255, 255)
 purpleLower = (140, 50, 50)
 purpleUpper = (160, 255, 255)
 
-redLower = (160, 100, 100)
-redUpper = (179, 255, 255)
+redLower = (0, 100, 100)
+redUpper = (10, 255, 255)
 
 blueLower = (90, 50, 20)
 blueUpper = (130, 255, 255)
