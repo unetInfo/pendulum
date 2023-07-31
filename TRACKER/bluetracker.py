@@ -7,7 +7,7 @@ import imutils
 import time
 from threading import Thread
 from playsound import playsound
-from TRACKER.tracker import EuclideanDistTracker
+from tracker import EuclideanDistTracker
 
 # Construct argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -71,7 +71,7 @@ while True:
             x = int(M['m10']/M['m00'])
             y = int(M['m01']/M['m00'])
 
-        if radius > 30:
+        if radius > 10:
             
             w = radius
             h = radius
@@ -87,7 +87,7 @@ while True:
                 # cv.drawContours(frame, [cnt], -1, (0,255,255), 3)
                 (x,y,w,h) = cv.boundingRect(cnt)
         
-            elif lennow >= 4 and len(approx) <= 20:
+            elif lennow >= 4 and len(approx) <= 12:
                     
                 if radiusprev != 0:
                     xnow = int((x + k * xprev)/(1 + k))
