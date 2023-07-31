@@ -1,3 +1,4 @@
+
 from collections import deque
 from imutils.video import VideoStream
 import numpy as np
@@ -17,26 +18,26 @@ args = vars(ap.parse_args())
 # TamperLab Mac Laptop
 # python doublependulum.py --ip 10.100.1.128
 
-# Andy's Mac Studio 
+# Andy's Mac Studio
 # python3 doublependulum.py --ip 192.168.1.107
 
-# port = 54345
-# ip = 101001128
+port = 54345
+ip_addr = "10.100.1.126"
 
 def yellow():
     generalSpherefinder(yellowLower, yellowUpper ,'yellow', detections)
-    
+
 def green():
     generalSpherefinder(greenLower, greenUpper, 'green', detections)
-    
+
 def red():
     generalSpherefinder(redLower, redUpper, 'red', detections)
-    
+
 def blue():
     generalSpherefinder(blueLower, blueUpper ,'blue', detections)
 
 def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
-    
+
     # Construct a mask for purple color, perform dilations and erosions to remove blobs
     mask = cv.inRange(hsv, lwr_iro_bnd, upr_iro_bnd)
     mask = cv.erode(mask, None, iterations=2)
@@ -49,8 +50,9 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
     print("Number of Countours:", len(cnts))
     center = None
     # detections = []
-    
+
     for cnt in cnts:
+        foundShape = ""
         approx = cv.approxPolyDP(cnt, 0.04 * cv.arcLength(cnt, True), True)
         # Proceed when a contour is found
         # c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
@@ -61,70 +63,73 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
             y = int(M['m01']/M['m00'])
 
         if radius > 20:
-            
+
             w = radius
             h = radius
             ind = 0
-        
+
             # if lenprev == 0:
             #     lennow = len(approx)
             # else:
             #     lennow = int((len(approx) + k * lenprev)/(1 + k))
-        
+
                 # putting shape name at center of each shape
             if len(approx) == 3:
-                cv.putText(frame, color_name + 'Triangle', (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                foundShape = 'Triangle'
+                cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                 cv.drawContours(frame, [cnt], -1, (0,255,255), 3)
-                # client.send_message("SOMeCOR", ["TRIANGLE", color_name, ind, center[0], center[1]])  # Send message with int, float and string 
+                # client.send_message("SOMeCOR", ["TRIANGLE", color_name, ind, center[0], center[1]])  # Send message with int, float and string
                 # ind = ind + 1
-        
+
             elif len(approx) == 4 and len(approx) <= 10:
                 if radius <= 30:
                 # if radiusprev != 0:
                 #     xnow = int((x + k * xprev)/(1 + k))
                 #     ynow = int((y + k * yprev)/(1 + k))
-                        
+
                 #     print(xnow, ynow)
-                        
-                # else: 
+
+                # else:
                 #     xnow = x
                 #     ynow = y
-                        
-                    cv.putText(frame, color_name + 'SmallQuad', (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    # client.send_message("SOMeCOR", ["SmallQUAD", color_name, ind, center[0], center[1]])  # Send message with int, float and string 
+                    foundShape = 'SmallQuad'
+                    cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    #osc_hose.send_message("SOMeCOR", [foundShape, color_name, ind, center[0], center[1]])  # Send message with int, float and string
                     # ind = ind + 1
-                    
+
                 else:
-                    cv.putText(frame, color_name + 'BigQuad', (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    # client.send_message("SOMeCOR", ["BigQUAD", color_name, ind, center[0], center[1]])  # Send message with int, float and string 
+                    foundShape = 'BigQuad'
+                    cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    #osc_hose.send_message("SOMeCOR", [foundShape, color_name, ind, center[0], center[1]])  # Send message with int, float and string
                     # ind = ind + 1
-                    
+
                 cv.drawContours(frame, [approx], -1, (0,255,255), 3)
-                
-                        
+
+
                 # xprev = xnow
                 # yprev = ynow
                 # radiusprev = radius
                 # lenprev = lennow
-                    
+
             else:
-                cv.putText(frame, color_name + 'Circle', (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                foundShape = 'Circle'
+                cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                 # center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
 
                 cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                 cv.circle(frame, center, 5, (0, 0, 255), -1)
-                # client.send_message("SOMeCOR", ["CIRCLE", color_name, ind, center[0], center[1]])  # Send message with int, float and string 
+                #osc_hose.send_message("SOMeCOR", [foundShape, color_name, ind, center[0], center[1]])  # Send message with int, float and string
                 # ind = ind + 1
 
-            detections.append([x, y, w, h])
-            
-    
-            
+            detections.append([x, y, w, h, foundShape, color_name])
+
+
+
         # else:
         #     radiusprev = 0
-    
-                    # 
-            
+
+                    #
+
     return detections
 
     # detections.remove([x, y, w, h])
@@ -151,7 +156,8 @@ if not args.get("video", False):
 else:
     vs = cv.VideoCapture(args["video"])
 
-# client = SimpleUDPClient(args["ip"], port)  # Create client
+#osc_hose = SimpleUDPClient(args["ip"], port)  # Create client
+osc_hose = SimpleUDPClient(ip_addr, port)  # Create client
 
 tracker = EuclideanDistTracker()
 detections = []
@@ -168,19 +174,20 @@ while True:
     frame = imutils.resize(frame, width=600)
     blurred = cv.GaussianBlur(frame, (11, 11), 0)
     hsv = cv.cvtColor(blurred, cv.COLOR_BGR2HSV)
-              
+
     yellow()
     green()
     red()
     blue()
-    
+
     objectIDs = tracker.update(detections)
     for objectID in objectIDs:
-        x, y, w, h, id = objectID
+        x, y, w, h, shap, farbe, id = objectID
         cv.putText(frame, str(id),(x,y-15),  cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)
-        detections.remove([x, y, w, h])
-    
-    cv.imshow("Mask", hsv)        
+        osc_hose.send_message("/SOMeCOR", [id, shap, farbe, x, y])  # Send message with int, float and string
+        detections.remove([x, y, w, h, shap, farbe])
+
+    cv.imshow("Mask", hsv)
     cv.imshow("Frame", frame)
     key = cv.waitKey(1) & 0xFF
 
@@ -192,6 +199,4 @@ if not args.get("video", False):
 else:
     vs.release()
 
-cv.destroyAllWindows()    
-
-    
+cv.destroyAllWindows()
