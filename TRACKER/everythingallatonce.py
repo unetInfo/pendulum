@@ -71,16 +71,16 @@ print('Available cameras:', available_cameras)
 create_windows_and_trackbars(redLower, redUpper, blueLower, blueUpper, greenLower, greenUpper, yellowLower, yellowUpper, hueShift, satL, satH, lumL, lumH)
 
 def yellow():
-    generalSpherefinder(yellowLower, yellowUpper ,'yellow', detections)
+    generalQuadfinder(yellowLower, yellowUpper ,'yellow', detections)
 
 def green():
-    generalSpherefinder(greenLower, greenUpper, 'green', detections)
+    generalQuadfinder(greenLower, greenUpper, 'green', detections)
 
 def red():
-    generalSpherefinder(redLower, redUpper, 'red', detections)
+    generalQuadfinder(redLower, redUpper, 'red', detections)
 
 def blue():
-    generalSpherefinder(blueLower, blueUpper ,'blue', detections)
+    generalQuadfinder(blueLower, blueUpper ,'blue', detections)
 
 def nothing(x):
     pass
@@ -103,8 +103,6 @@ def order_points(pts):
 
     # Return the coordinates in top-left, top-right, bottom-right, and bottom-left order
     return np.array([tl, tr, br, bl], dtype="float32")
-
-# Now you can use order_points(box) instead of imutils.order_points(box)
 
 
 def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
@@ -134,8 +132,8 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
             x = int(M['m10']/M['m00'])
             y = int(M['m01']/M['m00'])
 
-        if radius > 20:
 
+        if radius > 20 and radius < 30:
             w = radius
             h = radius
             ind = 0
@@ -150,10 +148,9 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
                 foundShape = 'Triangle'
                 cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                 cv.drawContours(frame, [cnt], -1, (0,255,255), 3)
-                # client.send_message("SOMeCOR", ["TRIANGLE", color_name, ind, center[0], center[1]])  # Send message with int, float and string
                 # ind = ind + 1
 
-            elif len(approx) == 4 and len(approx) <= 10:
+            elif len(approx) == 4 and len(approx) <= 6:
 
 
                 if len(approx) == 4:  # Check if the shape is quadrilateral
@@ -188,13 +185,11 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
                 #     ynow = y
                     foundShape = 'SmallQuad'
                     cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    #osc_hose.send_message("SOMeCOR", [foundShape, color_name, ind, center[0], center[1]])  # Send message with int, float and string
                     # ind = ind + 1
 
                 else:
                     foundShape = 'BigQuad'
                     cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-                    #osc_hose.send_message("SOMeCOR", [foundShape, color_name, ind, center[0], center[1]])  # Send message with int, float and string
                     # ind = ind + 1
 
                 cv.drawContours(frame, [approx], -1, (0,255,255), 3)
@@ -204,6 +199,8 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
                 # yprev = ynow
                 # radiusprev = radius
                 # lenprev = lennow
+                detections.append([x, y, w, h, foundShape, color_name])
+
 
             else:
                 foundShape = 'Circle'
@@ -212,10 +209,10 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
                 cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                 cv.circle(frame, center, 5, (0, 0, 255), -1)
-                #osc_hose.send_message("SOMeCOR", [foundShape, color_name, ind, center[0], center[1]])  # Send message with int, float and string
                 # ind = ind + 1
+                
+                detections.append([x, y, w, h, foundShape, color_name])
 
-            detections.append([x, y, w, h, foundShape, color_name])
 
 
 
@@ -229,7 +226,120 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
     # detections.remove([x, y, w, h])
 
 
+def generalQuadfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
+    # Construct a mask for purple color, perform dilations and erosions to remove blobs
+    mask = cv.inRange(hsv, lwr_iro_bnd, upr_iro_bnd)
+    mask = cv.erode(mask, None, iterations=2)
+    # mask = cv.Canny(mask, 500, 400)
+    mask = cv.dilate(mask, None, iterations=2)
+
+    # Find contours in the mask and initialize the current (x, y) center of the ball
+    cnts = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+    #print("Number of Countours:", len(cnts))
+    center = None
+    # detections = []
+
+    for cnt in cnts:
+        foundShape = ""
+        rotation_angle = 0
+        approx = cv.approxPolyDP(cnt, 0.04 * cv.arcLength(cnt, True), True)
+        # Proceed when a contour is found
+        # c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
+        ((x, y), radius) = cv.minEnclosingCircle(cnt)  # Compute the minimum enclosing circle
+        M = cv.moments(cnt)
+        if M["m00"] != 0:
+            x = int(M['m10']/M['m00'])
+            y = int(M['m01']/M['m00'])
+
+
+        if radius > 20 and radius < 30:
+            w = radius
+            h = radius
+            ind = 0
+
+            if len(approx) == 4:
+
+                # Order the points in the contour and unpack them
+                rect = cv.minAreaRect(approx)
+                box = cv.boxPoints(rect)
+                box = np.array(box, dtype="int")
+
+                # Order the points in the rectangle [top-left, top-right, bottom-right, bottom-left]
+                box = order_points(box)
+
+                # Compute the deltas to get the vectors representing the rectangle edges
+                (tl, tr, br, bl) = box
+                dX = tr[0] - tl[0]
+                dY = tr[1] - tl[1]
+
+                # Compute the angle, convert it to degrees and normalize it
+                angle = np.degrees(np.arctan2(dY, dX))
+                angle = angle if angle > 0 else angle + 360
+
+                rotation_angle = angle
+
+                if radius <= 30:
+                # if radiusprev != 0:
+                #     xnow = int((x + k * xprev)/(1 + k))
+                #     ynow = int((y + k * yprev)/(1 + k))
+
+                #     print(xnow, ynow)
+
+                # else:
+                #     xnow = x
+                #     ynow = y
+                    foundShape = 'SmallQuad'
+                    cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    # ind = ind + 1
+
+                else:
+                    foundShape = 'BigQuad'
+                    cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    # ind = ind + 1
+
+                cv.drawContours(frame, [approx], -1, (0,255,255), 3)
+
+                detections.append([x, y, w, h, foundShape, color_name])
+
+            else:
+                foundShape = 'Circle'
+                # cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                # # center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))  # Centroid
+
+                # cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
+                # cv.circle(frame, center, 5, (0, 0, 255), -1)
+                # # ind = ind + 1
+                
+                # detections.append([x, y, w, h, foundShape, color_name])
+
+
+
+
+        # else:
+        #     radiusprev = 0
+
+                    #
+
+    return detections
+
+    # detections.remove([x, y, w, h])
+
+def on_mouse_event(event, x, y, flags, param):
+    if event == cv.EVENT_LBUTTONUP:
+        region_size = 5
+        x_start = max(x - region_size//2, 0)
+        x_end = min(x + region_size//2, frame.shape[1] - 1)
+        y_start = max(y - region_size//2, 0)
+        y_end = min(y + region_size//2, frame.shape[0] - 1)
+        
+        region = hsv[y_start:y_end, x_start:x_end]
+        average_color = np.mean(region, axis=(0, 1))
+        
+        print('HSV value at this region is: ', average_color[0] * 2, average_color[1], average_color[2])
+
+cv.setMouseCallback('Frame', on_mouse_event)
 
 
 pts = deque(maxlen=args["buffer"])
@@ -249,24 +359,6 @@ osc_hose = SimpleUDPClient(ip_addr, port)  # Create client
 
 tracker = EuclideanDistTracker()
 detections = []
-
-
-
-
-def on_mouse_event(event, x, y, flags, param):
-    global checkbox_status, checkbox_img
-    if event == cv.EVENT_LBUTTONUP:
-        region_size = 5
-        # Ensure the region stays within the frame boundaries
-        x_start = max(x - region_size//2, 0)
-        x_end = min(x + region_size//2, frame.shape[1] - 1)
-        y_start = max(y - region_size//2, 0)
-        y_end = min(y + region_size//2, frame.shape[0] - 1)
-        
-        region = hsv[y_start:y_end, x_start:x_end]
-        average_color = np.mean(region, axis=(0, 1))
-        
-        print('HSV value at this region is: ', average_color)
 
 
 

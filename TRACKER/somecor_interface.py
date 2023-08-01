@@ -19,7 +19,7 @@ def find_cameras(max_cameras_to_test=2):
     return available_cameras
 
 def on_mouse_event(event, x, y, flags, param):
-    global checkbox_status, checkbox_img
+    global hsv, frame
     if event == cv.EVENT_LBUTTONUP:
         region_size = 5
         x_start = max(x - region_size//2, 0)
