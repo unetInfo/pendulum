@@ -8,12 +8,7 @@ import imutils
 from pythonosc.udp_client import SimpleUDPClient
 from tracker import EuclideanDistTracker
 import time
-import pickle
-import os
-
-# Path to the saved boundaries
-filename = 'boundaries.pkl'
-
+from somecor_interface import find_cameras, create_windows_and_trackbars, read_local_boundaries, save_local_boundaries
 
 # - Red: 0 or 360 degrees. For a range, you might use 330 to 30 degrees as the lower and upper bounds, respectively.
 # - Green: 120 degrees. For a range, you might use 90 to 150 degrees.
@@ -22,7 +17,7 @@ filename = 'boundaries.pkl'
 
 # Remember to halve these values when translating to the Hue values for OpenCV's 0-179 range. For example, red would range from about 165 to 15 in OpenCV's scale.
 
-# Define the default boundaries
+# Define the default boundaries in 180 space
 default_boundaries = {
     'yellowLower': (15, 50, 50),
     'yellowUpper': (45, 255, 255),
@@ -33,16 +28,16 @@ default_boundaries = {
     'blueLower': (108, 50, 50),
     'blueUpper': (135, 255, 255),
     'hueShift': 0,
+    'satL': 50,
+    'satH': 255,
+    'lumL': 50,
+    'lumH': 255
 }
 
-# If the file exists, load the boundaries from disk
-if os.path.exists(filename):
-    with open(filename, 'rb') as f:
-        boundaries = pickle.load(f)
-        print('loaded',boundaries)
-else:
-    boundaries = default_boundaries
-    print('using default',boundaries)
+# Path to the saved boundaries
+filename = 'boundaries.pkl'
+boundaries = read_local_boundaries(filename) or default_boundaries
+
 
 yellowLower = boundaries['yellowLower']
 yellowUpper = boundaries['yellowUpper']
@@ -53,6 +48,10 @@ redUpper = boundaries['redUpper']
 blueLower = boundaries['blueLower']
 blueUpper = boundaries['blueUpper']
 hueShift = boundaries['hueShift']
+satL = boundaries['satL']
+satH = boundaries['satH']
+lumL = boundaries['lumL']
+lumH = boundaries['lumH']
 
 # Construct argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -72,21 +71,10 @@ port = 54345
 #ip_addr = "localhost"
 ip_addr = "192.168.1.107"
 
-def find_cameras(max_cameras_to_test=10):
-    available_cameras = []
-    for i in range(max_cameras_to_test):
-        cap = cv.VideoCapture(i)
-        if cap is None or not cap.isOpened():
-            print('Camera not available:', i)
-        else:
-            print('Camera available:', i)
-            available_cameras.append(i)
-        cap.release()
-    return available_cameras
-
-available_cameras = find_cameras()
+available_cameras = find_cameras(2)
 print('Available cameras:', available_cameras)
 
+create_windows_and_trackbars(redLower, redUpper, blueLower, blueUpper, greenLower, greenUpper, yellowLower, yellowUpper, hueShift, satL, satH, lumL, lumH)
 
 def yellow():
     generalSpherefinder(yellowLower, yellowUpper ,'yellow', detections)
@@ -102,7 +90,6 @@ def blue():
 
 def nothing(x):
     pass
-
 
 def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
@@ -240,7 +227,7 @@ def on_mouse_event(event, x, y, flags, param):
         region = hsv[y_start:y_end, x_start:x_end]
         average_color = np.mean(region, axis=(0, 1))
         
-        print('HSV value at this region is: ', average_color, x, y)
+        print('HSV value at this region is: ', average_color)
 
 
 
@@ -287,6 +274,10 @@ while True:
     if frame_counter % update_interval == 0:
 # Get the new values of the trackbar positions
         hueShift = (cv.getTrackbarPos('hueShift', 'Trackbars') - 60) / 2
+        satL = cv.getTrackbarPos('satL', 'Trackbars')
+        satH = cv.getTrackbarPos('satH', 'Trackbars')
+        lumL = cv.getTrackbarPos('lumL', 'Trackbars')
+        lumH = cv.getTrackbarPos('lumH', 'Trackbars')
         redL = hueShift + cv.getTrackbarPos('redL', 'Trackbars') / 2
         redH = hueShift + cv.getTrackbarPos('redH', 'Trackbars') / 2
         blueL = hueShift + cv.getTrackbarPos('blueL', 'Trackbars') / 2
@@ -295,14 +286,14 @@ while True:
         greenH = hueShift + cv.getTrackbarPos('greenH', 'Trackbars') / 2
         yellowL = hueShift + cv.getTrackbarPos('yellowL', 'Trackbars') / 2
         yellowH = hueShift + cv.getTrackbarPos('yellowH', 'Trackbars') / 2
-        yellowLower = (yellowL, 50, 50)
-        yellowUpper = (yellowH, 255, 255)
-        greenLower = (greenL, 50, 50)
-        greenUpper = (greenH, 255, 255)
-        redLower = (redL, 100, 100)
-        redUpper = (redH, 255, 255)
-        blueLower = (blueL, 50, 50)
-        blueUpper = (blueH, 255, 255)
+        yellowLower = (yellowL, satL, lumL)
+        yellowUpper = (yellowH, satH, lumH)
+        greenLower = (greenL, satL, lumL)
+        greenUpper = (greenH, satH, lumH)
+        redLower = (redL, satL, lumL)
+        redUpper = (redH, satH, lumH)
+        blueLower = (blueL, satL, lumL)
+        blueUpper = (blueH, satH, lumH)
         # Check if 'Kill' trackbar is set to 1
         if cv.getTrackbarPos('Kill', 'Trackbars') > 0:
             break
@@ -341,16 +332,6 @@ while True:
 
 print('Graceful end')
 
-# Save the boundaries back to disk at the end of your program
-yellowLower = (yellowLower[0] - hueShift, yellowLower[1], yellowLower[2])
-yellowUpper = (yellowUpper[0] - hueShift, yellowUpper[1], yellowUpper[2])
-greenLower = (greenLower[0] - hueShift, greenLower[1], greenLower[2])
-greenUpper = (greenUpper[0] - hueShift, greenUpper[1], greenUpper[2])
-redLower = (redLower[0] - hueShift, redLower[1], redLower[2])
-redUpper = (redUpper[0] - hueShift, redUpper[1], redUpper[2])
-blueLower = (blueLower[0] - hueShift, blueLower[1], blueLower[2])
-blueUpper = (blueUpper[0] - hueShift, blueUpper[1], blueUpper[2])
-
 boundaries = {
     'yellowLower': yellowLower,
     'yellowUpper': yellowUpper,
@@ -360,12 +341,21 @@ boundaries = {
     'redUpper': redUpper,
     'blueLower': blueLower,
     'blueUpper': blueUpper,
-    'hueShift': hueShift,
 }
 
+# Perform the hueShift operation on the boundaries
+for key, value in boundaries.items():
+    boundaries[key] = (value[0] - hueShift, value[1], value[2])
 
-with open(filename, 'wb') as f:
-    pickle.dump(boundaries, f)
+# Add the non H values to the boundaries dictionary
+boundaries['hueShift'] = hueShift
+boundaries['satL'] = satL
+boundaries['satH'] = satH
+boundaries['lumL'] = lumL
+boundaries['lumH'] = lumH
+
+
+save_local_boundaries(boundaries, filename)
 
 if not args.get("video", False):
     vs.stop()
