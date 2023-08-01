@@ -231,17 +231,6 @@ def on_mouse_event(event, x, y, flags, param):
 
 
 
-cv.namedWindow('Frame')
-cv.moveWindow('Frame', 200, 0)
-cv.setMouseCallback('Frame', on_mouse_event)
-
-cv.namedWindow('Mask')
-cv.moveWindow('Mask', 200, 370)
-
-# Create a window
-cv.namedWindow('Trackbars')
-
-
 # Create trackbars for color change
 # For HSV, hue range is [0,179], saturation range is [0,255], and value range is [0,255].
 # If you're working in a different color space, the ranges might be different.
@@ -261,8 +250,7 @@ cv.createTrackbar('Kill','Trackbars',0,1,nothing)
 frame_counter = 0
 update_interval = 10  # Adjust this to change how often the trackbars are read
 
-# your main code here
-
+# loop over the frames from the video stream
 while True:
     frame = vs.read()  # Grab current frame
     frame = frame[1] if args.get("video", False) else frame  # Handle frame from VideoCapture or VideoStream
@@ -272,7 +260,7 @@ while True:
         break
 
     if frame_counter % update_interval == 0:
-# Get the new values of the trackbar positions
+        # Get current values of the trackbar positions
         hueShift = (cv.getTrackbarPos('hueShift', 'Trackbars') - 60) / 2
         satL = cv.getTrackbarPos('satL', 'Trackbars')
         satH = cv.getTrackbarPos('satH', 'Trackbars')
@@ -294,7 +282,6 @@ while True:
         redUpper = (redH, satH, lumH)
         blueLower = (blueL, satL, lumL)
         blueUpper = (blueH, satH, lumH)
-        # Check if 'Kill' trackbar is set to 1
         if cv.getTrackbarPos('Kill', 'Trackbars') > 0:
             break
 
@@ -316,15 +303,15 @@ while True:
         cv.putText(frame, str(id),(x,y-15),  cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)
         detections.remove([x, y, w, h, shap, farbe])
 
+    # only send the osc if there is at least one object
     if len(oscs) > 0:
         osc_hose.send_message("/SOMeCOR", oscs)  # Send message with int, float and string
 
     cv.imshow("Mask", hsv)
-
     cv.imshow("Frame", frame)
 
+    # even though the keyboard reading doesnt work in osx, it is needed to keep the window happy somehow
     key = cv.waitKey(21) & 0xFF
-
     if key == ord("q"):
        break
 
@@ -332,6 +319,7 @@ while True:
 
 print('Graceful end')
 
+# bundle up the settings so we can save them
 boundaries = {
     'yellowLower': yellowLower,
     'yellowUpper': yellowUpper,
