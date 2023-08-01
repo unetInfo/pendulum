@@ -60,16 +60,10 @@ ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
 # ap.add_argument("-i", "--ip", required=True, help="IP address of the machine running Golden")
 args = vars(ap.parse_args())
 
-# TamperLab Mac Laptop
-# python doublependulum.py --ip 10.100.1.128
-
-# Andy's Mac Studio
-# python3 doublependulum.py --ip 192.168.1.107
-
 port = 54345
 #ip_addr = "10.100.1.126"
-#ip_addr = "localhost"
-ip_addr = "192.168.1.107"
+#ip_addr = "192.168.1.107"
+ip_addr = "127.0.0.1"
 
 available_cameras = find_cameras(2)
 print('Available cameras:', available_cameras)
@@ -91,6 +85,28 @@ def blue():
 def nothing(x):
     pass
 
+def order_points(pts):
+    # Sort the points based on their x-coordinate
+    x_sorted = pts[np.argsort(pts[:, 0]), :]
+
+    # Grab the left-most (smallest x) and right-most (largest x) points
+    left_most = x_sorted[:2, :]
+    right_most = x_sorted[2:, :]
+
+    # Now, sort the left-most coordinates according to their y-coordinates so we can grab the top-left and bottom-left points, respectively
+    left_most = left_most[np.argsort(left_most[:, 1]), :]
+    (tl, bl) = left_most
+
+    # Now that we have the top-left coordinate, use it as an anchor to calculate the Euclidean distance between the top-left and right-most points; by the Pythagorean theorem, the point with the largest distance will be our bottom-right point
+    D = np.linalg.norm(right_most - tl, axis=1)
+    (br, tr) = right_most[np.argsort(D)[::-1], :]
+
+    # Return the coordinates in top-left, top-right, bottom-right, and bottom-left order
+    return np.array([tl, tr, br, bl], dtype="float32")
+
+# Now you can use order_points(box) instead of imutils.order_points(box)
+
+
 def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
     # Construct a mask for purple color, perform dilations and erosions to remove blobs
@@ -108,6 +124,7 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
     for cnt in cnts:
         foundShape = ""
+        rotation_angle = 0
         approx = cv.approxPolyDP(cnt, 0.04 * cv.arcLength(cnt, True), True)
         # Proceed when a contour is found
         # c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
@@ -137,6 +154,28 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
                 # ind = ind + 1
 
             elif len(approx) == 4 and len(approx) <= 10:
+
+
+                if len(approx) == 4:  # Check if the shape is quadrilateral
+                    # Order the points in the contour and unpack them
+                    rect = cv.minAreaRect(approx)
+                    box = cv.boxPoints(rect)
+                    box = np.array(box, dtype="int")
+
+                    # Order the points in the rectangle [top-left, top-right, bottom-right, bottom-left]
+                    box = order_points(box)
+
+                    # Compute the deltas to get the vectors representing the rectangle edges
+                    (tl, tr, br, bl) = box
+                    dX = tr[0] - tl[0]
+                    dY = tr[1] - tl[1]
+
+                    # Compute the angle, convert it to degrees and normalize it
+                    angle = np.degrees(np.arctan2(dY, dX))
+                    angle = angle if angle > 0 else angle + 360
+
+                    rotation_angle = angle
+
                 if radius <= 30:
                 # if radiusprev != 0:
                 #     xnow = int((x + k * xprev)/(1 + k))
