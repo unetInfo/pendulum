@@ -434,9 +434,7 @@ while True:
         cv.putText(frame, str(id),(x,y-15),  cv.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)
         detections.remove([x, y, w, h, shap, farbe])
 
-    # only send the osc if there is at least one object
-    if len(oscs) > 0:
-        osc_hose.send_message("/SOMeCOR", oscs)  # Send message with int, float and string
+    osc_hose.send_message("/SOMeCOR", oscs)  # Send message with int, float and string
 
     cv.imshow("Mask", hsv)
     cv.imshow("Frame", frame)

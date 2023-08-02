@@ -18,24 +18,11 @@ def find_cameras(max_cameras_to_test=2):
         cap.release()
     return available_cameras
 
-def on_mouse_event(event, x, y, flags, param):
-    global hsv, frame
-    if event == cv.EVENT_LBUTTONUP:
-        region_size = 5
-        x_start = max(x - region_size//2, 0)
-        x_end = min(x + region_size//2, frame.shape[1] - 1)
-        y_start = max(y - region_size//2, 0)
-        y_end = min(y + region_size//2, frame.shape[0] - 1)
-        
-        region = hsv[y_start:y_end, x_start:x_end]
-        average_color = np.mean(region, axis=(0, 1))
-        
-        print('HSV value at this region is: ', average_color)
+
 
 def create_windows_and_trackbars(redLower, redUpper, blueLower, blueUpper, greenLower, greenUpper, yellowLower, yellowUpper, hueShift, satL, satH, lumL, lumH):
     cv.namedWindow('Frame')
     cv.moveWindow('Frame', 200, 0)
-    cv.setMouseCallback('Frame', on_mouse_event)
 
     cv.namedWindow('Mask')
     cv.moveWindow('Mask', 200, 370)
