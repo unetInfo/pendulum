@@ -31,8 +31,11 @@ default_boundaries = {
     'satL': 50,
     'satH': 255,
     'lumL': 50,
-    'lumH': 255
-}
+    'lumH': 255,
+    'smallSizeL': 20,
+    'smallSizeH': 30,
+    'bigSizeL': 20,
+    'bigSizeH': 30,}
 
 # Path to the saved boundaries
 filename = 'boundaries.pkl'
@@ -52,6 +55,10 @@ satL = boundaries['satL']
 satH = boundaries['satH']
 lumL = boundaries['lumL']
 lumH = boundaries['lumH']
+smallSizeL = boundaries['smallSizeL']
+smallSizeH = boundaries['smallSizeH']
+bigSizeL = boundaries['bigSizeL']
+bigSizeH = boundaries['bigSizeH']
 
 # Construct argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -68,7 +75,8 @@ ip_addr = "127.0.0.1"
 available_cameras = find_cameras(2)
 print('Available cameras:', available_cameras)
 
-create_windows_and_trackbars(redLower, redUpper, blueLower, blueUpper, greenLower, greenUpper, yellowLower, yellowUpper, hueShift, satL, satH, lumL, lumH)
+
+create_windows_and_trackbars(redLower, redUpper, blueLower, blueUpper, greenLower, greenUpper, yellowLower, yellowUpper, hueShift, satL, satH, lumL, lumH, smallSizeL, smallSizeH, bigSizeL, bigSizeH)
 
 def yellow():
     generalQuadfinder(yellowLower, yellowUpper ,'yellow', detections)
@@ -112,6 +120,9 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
     mask = cv.erode(mask, None, iterations=2)
     # mask = cv.Canny(mask, 500, 400)
     mask = cv.dilate(mask, None, iterations=2)
+
+    cv.imshow("Mask "+ color_name, mask)
+
 
     # Find contours in the mask and initialize the current (x, y) center of the ball
     cnts = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -254,7 +265,7 @@ def generalQuadfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
             y = int(M['m01']/M['m00'])
 
 
-        if radius > 20 and radius < 30:
+        if radius > smallSizeL and radius < smallSizeH:
             w = radius
             h = radius
             ind = 0
@@ -396,6 +407,11 @@ while True:
         satL = cv.getTrackbarPos('satL', 'Trackbars')
         satH = cv.getTrackbarPos('satH', 'Trackbars')
         lumL = cv.getTrackbarPos('lumL', 'Trackbars')
+        smallSizeL = cv.getTrackbarPos('smallSizeL', 'Trackbars')
+        smallSizeH = cv.getTrackbarPos('smallSizeH', 'Trackbars')
+        bigSizeL = cv.getTrackbarPos('bigSizeL', 'Trackbars')
+        bigSizeH = cv.getTrackbarPos('bigSizeH', 'Trackbars')
+
         lumH = cv.getTrackbarPos('lumH', 'Trackbars')
         redL = hueShift + cv.getTrackbarPos('redL', 'Trackbars') / 2
         redH = hueShift + cv.getTrackbarPos('redH', 'Trackbars') / 2
@@ -470,6 +486,10 @@ boundaries['satL'] = satL
 boundaries['satH'] = satH
 boundaries['lumL'] = lumL
 boundaries['lumH'] = lumH
+boundaries['smallSizeL'] = smallSizeL
+boundaries['smallSizeH'] = smallSizeH
+boundaries['bigSizeL'] = bigSizeL
+boundaries['bigSizeH'] = bigSizeH
 
 
 save_local_boundaries(boundaries, filename)
