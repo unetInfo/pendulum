@@ -244,6 +244,8 @@ def generalQuadfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
     mask = cv.erode(mask, None, iterations=2)
     # mask = cv.Canny(mask, 500, 400)
     mask = cv.dilate(mask, None, iterations=2)
+    
+    cv.imshow("Mask" + color_name, mask)
 
     # Find contours in the mask and initialize the current (x, y) center of the ball
     cnts = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -265,12 +267,12 @@ def generalQuadfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
             y = int(M['m01']/M['m00'])
 
 
-        if radius > smallSizeL and radius < smallSizeH:
+        if radius > smallSizeL and radius < bigSizeH:
             w = radius
             h = radius
             ind = 0
 
-            if len(approx) == 4:
+            if len(approx) >= 4:
 
                 # Order the points in the contour and unpack them
                 rect = cv.minAreaRect(approx)
@@ -291,7 +293,7 @@ def generalQuadfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
                 rotation_angle = angle
 
-                if radius <= 30:
+                if radius <= smallSizeH:
                 # if radiusprev != 0:
                 #     xnow = int((x + k * xprev)/(1 + k))
                 #     ynow = int((y + k * yprev)/(1 + k))
@@ -305,7 +307,7 @@ def generalQuadfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
                     cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                     # ind = ind + 1
 
-                else:
+                elif radius >= bigSizeL:
                     foundShape = 'BigQuad'
                     cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
                     # ind = ind + 1
