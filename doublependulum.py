@@ -14,7 +14,7 @@ from pythonosc.udp_client import SimpleUDPClient
 ap = argparse.ArgumentParser()
 ap.add_argument("-v", "--video", help="path to the (optional) video file")
 ap.add_argument("-b", "--buffer", type=int, default=64, help="max buffer size")
-ap.add_argument("-i", "--ip", required=True, help="IP address of the machine running Golden")
+# ap.add_argument("-i", "--ip", required=True, help="IP address of the machine running Golden")
 args = vars(ap.parse_args())
 
 
@@ -25,7 +25,7 @@ args = vars(ap.parse_args())
 # python3 doublependulum.py --ip 192.168.1.107
 
 
-port = 54345
+# port = 54345
 
 # Constants
 RIGHT_CENTER_X_THRESHOLD = 280  # Adjust this value based on your video frame width
@@ -69,8 +69,8 @@ def generalSpherefinder(lwr_iro_bnd, upr_iro_bnd, color_name):
                 if radius > 10:
                     cv.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                     cv.circle(frame, center, 5, (0, 0, 255), -1)
-                    client.send_message("/pendulum", [color_name, ind, center[0], center[1]])  # Send message with int, float and string 
-                    ind = ind + 1
+                    # client.send_message("/pendulum", [color_name, ind, center[0], center[1]])  # Send message with int, float and string 
+                    # ind = ind + 1
   
 
 
@@ -95,7 +95,7 @@ if not args.get("video", False):
 else:
     vs = cv.VideoCapture(args["video"])
 
-client = SimpleUDPClient(args["ip"], port)  # Create client
+# client = SimpleUDPClient(args["ip"], port)  # Create client
 
 while True:
     frame = vs.read()  # Grab current frame
