@@ -28,8 +28,6 @@ def create_windows_and_trackbars(redLower, redUpper, blueLower, blueUpper, green
     cv.moveWindow('Mask', 200, 370)
 
     cv.namedWindow('Trackbars')
-
-
     cv.createTrackbar('redL', 'Trackbars', int(redLower[0] * 2), 359, nothing)
     cv.createTrackbar('redH', 'Trackbars', int(redUpper[0] * 2), 359, nothing)
     cv.createTrackbar('yellowL', 'Trackbars', int(yellowLower[0] * 2), 359, nothing)
