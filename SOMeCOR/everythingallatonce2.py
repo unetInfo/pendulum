@@ -134,7 +134,7 @@ def generalObjectfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
     for cnt in cnts:
         foundShape = ""
         rotation_angle = 0
-        area = cv.contourArea(cnt)
+        # area = cv.contourArea(cnt)
         approx = cv.approxPolyDP(cnt, (approxPoly/100) * cv.arcLength(cnt, True), True)
         # Proceed when a contour is found
         # c = max(cnts, key=cv.contourArea)  # Find the largest contour in the mask
@@ -144,7 +144,7 @@ def generalObjectfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
             x = int(M['m10']/M['m00'])
             y = int(M['m01']/M['m00'])
 
-        if area > smallSizeL and radius < bigSizeH:
+        if radius > smallSizeL and radius < bigSizeH:
             w = radius
             h = radius
             ind = 0
@@ -170,7 +170,7 @@ def generalObjectfinder(lwr_iro_bnd, upr_iro_bnd, color_name, detections):
 
                 rotation_angle = angle
 
-                if area <= smallSizeH:
+                if radius <= smallSizeH:
                 
                     foundShape = 'SmallQuad'
                     cv.putText(frame, color_name + foundShape, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
@@ -242,7 +242,7 @@ cv.createTrackbar('greenH', 'Trackbars', int(greenUpper[0] * 2), 359, nothing)
 cv.createTrackbar('yellowL', 'Trackbars', int(yellowLower[0] * 2), 359, nothing)
 cv.createTrackbar('yellowH', 'Trackbars', int(yellowUpper[0] * 2), 359, nothing)
 cv.createTrackbar('hueShift', 'Trackbars', int(hueShift + 60), 120, nothing)
-cv.createTrackbar('Kill','Trackbars',0,1,nothing)
+cv.createTrackbar('Kill','Trackbars', 0, 1,nothing)
 
 frame_counter = 0
 update_interval = 10  # Adjust this to change how often the trackbars are read
